@@ -17,9 +17,12 @@ def read_data(path):
         for file in os.listdir(path+experiment):
            with open(path+experiment+'/'+file, newline='') as csvfile:
                reader = csv.reader(csvfile, delimiter=',')
+               i=0
                for row in reader:
-                   if row[0][:6] == 'output':
-                       executions.append(float(row[2]))
+                   i+=1
+                   if row[0][:5] != 'video':
+                       print('i = '+str(i) + '  exec: '+ row[4])                       
+                       executions.append(float(row[4]))
         mean = np.mean(executions)
         CI=st.t.interval(alpha=0.95, df=len(executions)-1, loc=mean,
                          scale=st.sem(executions))
@@ -85,4 +88,4 @@ def plot_core_type(core_type,results):
     ax.grid('minor') 
     ax.legend()     
     fig.tight_layout()    
-    plt.savefig(core_type+'_vs_no_of_cores'+'.pdf')
+    plt.savefig(core_type+'_facenet'+'.pdf')

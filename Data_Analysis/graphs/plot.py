@@ -1,7 +1,7 @@
 from utils import *
 
 # Path to the directory of the experimental results
-path_to_results ='../Yolov3/experiment_result/'
+path_to_results ='../FaceNet/'
 
 # read_data: it is a function that reads files in the directory and returns
 # a dictionary contains the mean and CI for each experiment
