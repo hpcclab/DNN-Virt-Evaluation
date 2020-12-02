@@ -13,21 +13,31 @@ def read_data(path):
         key_mean = 'mean_'+experiment    
         key_CI  = 'CI_'+experiment
         stat_experiments.update({key_mean:None, key_CI:None})
-        executions = []    
+        executions = [] 
+        exec_outliers_removed=[]
         for file in os.listdir(path+experiment):
            with open(path+experiment+'/'+file, newline='') as csvfile:
                reader = csv.reader(csvfile, delimiter=',')
                i=0
                for row in reader:
                    i+=1
-                   if row[0][:5] != 'video':
+                   if row[0][:5] != 'video' and i!=2:
                        print('i = '+str(i) + '  exec: '+ row[4])                       
                        executions.append(float(row[4]))
-        mean = np.mean(executions)
-        CI=st.t.interval(alpha=0.95, df=len(executions)-1, loc=mean,
-                         scale=st.sem(executions))
+        data_mean = np.mean(executions)
+        data_std = np.std(executions)
+        cut_off = data_std * 3
+        lower, upper = data_mean - cut_off, data_mean + cut_off
+        exec_outliers_removed = [t for t in executions if t > lower and t < upper]
+        
+        mean = np.mean(exec_outliers_removed)
+
+        
+        CI=st.t.interval(alpha=0.95, df=len(exec_outliers_removed)-1, loc=mean,
+                         scale=st.sem(exec_outliers_removed))
+        
         stat_experiments[key_mean] = mean
-        stat_experiments[key_CI]   =CI[1]-CI[0]
+        stat_experiments[key_CI]   =0.5*(CI[1]-CI[0])
     return stat_experiments
 
 
