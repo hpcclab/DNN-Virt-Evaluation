@@ -7,7 +7,25 @@ import os
 import scipy.stats as st
 
 
-def read_data(path): 
+def confidence(alpha, data ):
+    n = len(data)    
+    data_mean = np.mean(data)
+    data_std = np.std(data,ddof=1)        
+    cut_off = data_std * 3
+    lower, upper = data_mean - cut_off, data_mean + cut_off
+    outliers_removed = [x for x in data if x > lower and x < upper]    
+    mean = np.mean(outliers_removed)     
+    s = np.std(outliers_removed,ddof=1)
+    se = s/np.sqrt(len(outliers_removed))
+    t = st.t.ppf((1+alpha)/2.0,len(outliers_removed)-1)    
+    CI = [mean - t * se , mean + t* se]  
+    
+    return mean, CI
+    
+    
+    
+
+def read_data(path,app): 
     stat_experiments = dict()    
     for experiment in os.listdir(path):
         key_mean = 'mean_'+experiment    
@@ -17,25 +35,20 @@ def read_data(path):
         exec_outliers_removed=[]
         for file in os.listdir(path+experiment):
            with open(path+experiment+'/'+file, newline='') as csvfile:
-               reader = csv.reader(csvfile, delimiter=',')
-               i=0
+               reader = csv.reader(csvfile, delimiter=',')    
+               
                for row in reader:
-                   i+=1
-                   if row[0][:5] != 'video' and i!=2:
-                       print('i = '+str(i) + '  exec: '+ row[4])                       
-                       executions.append(float(row[4]))
-        data_mean = np.mean(executions)
-        data_std = np.std(executions)
-        cut_off = data_std * 3
-        lower, upper = data_mean - cut_off, data_mean + cut_off
-        exec_outliers_removed = [t for t in executions if t > lower and t < upper]
-        
-        mean = np.mean(exec_outliers_removed)
-
-        
-        CI=st.t.interval(alpha=0.95, df=len(exec_outliers_removed)-1, loc=mean,
-                         scale=st.sem(exec_outliers_removed))
-        
+                   if app == 'FaceNet':
+                       if row[0][:5] != 'video':
+                           execution = float(row[4])
+                           executions.append(execution)
+    
+                   elif app == 'Yolo':
+                       if row[0][:6] == 'output':                           
+                           execution = float(row[2])                           
+                           executions.append(execution)  
+                           
+        mean , CI = confidence(0.95,executions)        
         stat_experiments[key_mean] = mean
         stat_experiments[key_CI]   =0.5*(CI[1]-CI[0])
     return stat_experiments
@@ -62,7 +75,7 @@ def get_results_for_core_type(core_type,stat_experiments):
             
     return results
 
-def plot_core_type(core_type,results):    
+def plot_core_type(core_type,results,app):    
     
     labels = ['BM', 'CN', 'VM', 'VMCN']
     xticks  = [2,4,8,16,32,64]
@@ -97,5 +110,9 @@ def plot_core_type(core_type,results):
     ax.set_xlabel('Number of CPU Cores',fontsize=14)
     ax.grid('minor') 
     ax.legend()     
-    fig.tight_layout()    
-    plt.savefig(core_type+'_facenet'+'.pdf')
+    fig.tight_layout()   
+    if app == 'FaceNet':
+        name = core_type+'FaceNet.pdf'
+    elif app == 'Yolo':
+        name = core_type+'Yolo.pdf'
+    plt.savefig('./graphs/'+name)
